@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/capture_frame"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <SurfaceView
+            android:id="@+id/capture_preview_view"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_gravity="center" />
+
+        <com.httvc.zxingdemo.zxing.view.ViewfinderView
+            android:id="@+id/capture_viewfinder_view"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_gravity="center"
+            android:background="@android:color/transparent" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="50dp">
+
+            <TextView
+                android:id="@+id/capture_top_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/top_hint"
+                android:textColor="#ffffffff"
+                android:textSize="13.0sp" />
+        </LinearLayout>
+    </RelativeLayout>
+
+</FrameLayout>

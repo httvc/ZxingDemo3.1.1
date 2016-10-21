@@ -12,15 +12,21 @@
         android:id="@+id/scan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Sacn"/>
+        android:text="扫描"/>
     <Button
         android:layout_below="@+id/scan"
         android:id="@+id/generate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="QRcode"/>
-    <ImageView
+        android:text="生成二维码"/>
+    <Button
         android:layout_below="@id/generate"
+        android:id="@+id/ssssss"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="本地识别二维码"/>
+    <ImageView
+        android:layout_below="@id/ssssss"
         android:id="@+id/sss"
         android:layout_width="290dp"
         android:layout_height="290dp"/>

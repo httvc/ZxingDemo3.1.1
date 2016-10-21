@@ -1,12 +1,18 @@
 package com.httvc.zxingdemo;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Display;
 import android.view.View;
@@ -14,18 +20,63 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.zxing.Result;
 import com.google.zxing.WriterException;
+import com.google.zxing.client.result.ResultParser;
 import com.httvc.zxingdemo.zxing.CaptureActivity;
 import com.httvc.zxingdemo.zxing.common.BitmapUtils;
+import com.httvc.zxingdemo.zxing.decode.BitmapDecoder;
 import com.httvc.zxingdemo.zxing.encode.QRCodeEncoder;
+
+import java.lang.ref.WeakReference;
 
 public class MainActivity extends AppCompatActivity {
     final int REQUEST_CAMERA = 101;
     private ImageView iv;
+    private static final int REQUEST_CODE = 100;
+    private static final int PARSE_BARCODE_FAIL = 300;
+    private static final int PARSE_BARCODE_SUC = 200;
 
-    private static final String USE_VCARD_KEY = "USE_VCARD";
-
+    /**
+     * 图片的路径
+     */
+    private String photoPath;
     private QRCodeEncoder qrCodeEncoder;
+
+
+    private Handler mHandler = new MyHandler(this);
+
+    static class MyHandler extends Handler {
+
+        private WeakReference<Activity> activityReference;
+
+        public MyHandler(Activity activity) {
+            activityReference = new WeakReference<Activity>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+
+            switch (msg.what) {
+                case PARSE_BARCODE_SUC: // 解析图片成功
+                    Toast.makeText(activityReference.get(),
+                            "解析成功，结果为：" + msg.obj, Toast.LENGTH_SHORT).show();
+                    break;
+
+                case PARSE_BARCODE_FAIL:// 解析图片失败
+
+                    Toast.makeText(activityReference.get(), "解析图片失败",
+                            Toast.LENGTH_SHORT).show();
+                    break;
+
+                default:
+                    break;
+            }
+
+            super.handleMessage(msg);
+        }
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +117,17 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Text can not be empty", Toast.LENGTH_SHORT).show();
                 }
                  launchSearch("第一次生成123adg");
+            }
+        });
+
+        findViewById(R.id.ssssss).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent innerIntent = new Intent(Intent.ACTION_GET_CONTENT); // "android.intent.action.GET_CONTENT"
+                innerIntent.setType("image/*");
+                Intent wrapperIntent = Intent.createChooser(innerIntent,
+                        "选择二维码图片");
+                startActivityForResult(wrapperIntent, REQUEST_CODE);
             }
         });
     }
@@ -126,6 +188,65 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
         }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+
+        if (resultCode == RESULT_OK) {
+            final ProgressDialog progressDialog;
+            switch (requestCode) {
+                case REQUEST_CODE:
+
+                    // 获取选中图片的路径
+                    Cursor cursor = getContentResolver().query(
+                            intent.getData(), null, null, null, null);
+                    if (cursor.moveToFirst()) {
+                        photoPath = cursor.getString(cursor
+                                .getColumnIndex(MediaStore.Images.Media.DATA));
+                    }
+                    cursor.close();
+
+                    progressDialog = new ProgressDialog(this);
+                    progressDialog.setMessage("正在扫描...");
+                    progressDialog.setCancelable(false);
+                    progressDialog.show();
+
+                    new Thread(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            Bitmap img = BitmapUtils
+                                    .getCompressedBitmap(photoPath);
+
+                            BitmapDecoder decoder = new BitmapDecoder(
+                                    MainActivity.this);
+                            Result result = decoder.getRawResult(img);
+
+                            if (result != null) {
+                                Message m = mHandler.obtainMessage();
+                                m.what = PARSE_BARCODE_SUC;
+                                m.obj = ResultParser.parseResult(result)
+                                        .toString();
+                                mHandler.sendMessage(m);
+                            }
+                            else {
+                                Message m = mHandler.obtainMessage();
+                                m.what = PARSE_BARCODE_FAIL;
+                                mHandler.sendMessage(m);
+                            }
+
+                            progressDialog.dismiss();
+
+                        }
+                    }).start();
+
+                    break;
+
+            }
+        }
+
     }
 }
 

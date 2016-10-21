@@ -2,14 +2,10 @@ package com.httvc.zxingdemo.zxing;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
-import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
@@ -25,13 +21,10 @@ import com.google.zxing.Result;
 import com.google.zxing.client.result.ResultParser;
 import com.httvc.zxingdemo.R;
 import com.httvc.zxingdemo.zxing.camera.CameraManager;
-import com.httvc.zxingdemo.zxing.common.BitmapUtils;
-import com.httvc.zxingdemo.zxing.decode.BitmapDecoder;
 import com.httvc.zxingdemo.zxing.decode.CaptureActivityHandler;
 import com.httvc.zxingdemo.zxing.view.ViewfinderView;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Map;
 
@@ -55,8 +48,6 @@ public final class CaptureActivity extends Activity implements
 
 	private static final int REQUEST_CODE = 100;
 
-	private static final int PARSE_BARCODE_FAIL = 300;
-	private static final int PARSE_BARCODE_SUC = 200;
 
 	/**
 	 * 是否有预览
@@ -118,44 +109,8 @@ public final class CaptureActivity extends Activity implements
 
 	private IntentSource source;
 
-	/**
-	 * 图片的路径
-	 */
-	private String photoPath;
 
-	private Handler mHandler = new MyHandler(this);
 
-	static class MyHandler extends Handler {
-
-		private WeakReference<Activity> activityReference;
-
-		public MyHandler(Activity activity) {
-			activityReference = new WeakReference<Activity>(activity);
-		}
-
-		@Override
-		public void handleMessage(Message msg) {
-
-			switch (msg.what) {
-				case PARSE_BARCODE_SUC: // 解析图片成功
-					Toast.makeText(activityReference.get(),
-							"解析成功，结果为：" + msg.obj, Toast.LENGTH_SHORT).show();
-					break;
-
-				case PARSE_BARCODE_FAIL:// 解析图片失败
-
-					Toast.makeText(activityReference.get(), "解析图片失败",
-							Toast.LENGTH_SHORT).show();
-					break;
-
-				default:
-					break;
-			}
-
-			super.handleMessage(msg);
-		}
-
-	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -287,64 +242,7 @@ public final class CaptureActivity extends Activity implements
 		return super.onKeyDown(keyCode, event);
 	}
 
-	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 
-		if (resultCode == RESULT_OK) {
-			final ProgressDialog progressDialog;
-			switch (requestCode) {
-				case REQUEST_CODE:
-
-					// 获取选中图片的路径
-					Cursor cursor = getContentResolver().query(
-							intent.getData(), null, null, null, null);
-					if (cursor.moveToFirst()) {
-						photoPath = cursor.getString(cursor
-								.getColumnIndex(MediaStore.Images.Media.DATA));
-					}
-					cursor.close();
-
-					progressDialog = new ProgressDialog(this);
-					progressDialog.setMessage("正在扫描...");
-					progressDialog.setCancelable(false);
-					progressDialog.show();
-
-					new Thread(new Runnable() {
-
-						@Override
-						public void run() {
-
-							Bitmap img = BitmapUtils
-									.getCompressedBitmap(photoPath);
-
-							BitmapDecoder decoder = new BitmapDecoder(
-									CaptureActivity.this);
-							Result result = decoder.getRawResult(img);
-
-							if (result != null) {
-								Message m = mHandler.obtainMessage();
-								m.what = PARSE_BARCODE_SUC;
-								m.obj = ResultParser.parseResult(result)
-										.toString();
-								mHandler.sendMessage(m);
-							}
-							else {
-								Message m = mHandler.obtainMessage();
-								m.what = PARSE_BARCODE_FAIL;
-								mHandler.sendMessage(m);
-							}
-
-							progressDialog.dismiss();
-
-						}
-					}).start();
-
-					break;
-
-			}
-		}
-
-	}
 
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
